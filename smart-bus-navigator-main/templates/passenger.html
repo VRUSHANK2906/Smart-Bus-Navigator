@@ -1,0 +1,53 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Track {{ bus_id }}</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<header><h1>{{ route.name }}</h1></header>
+<div id="bar"><label>Get off at: <select id="dest">
+<option value="">Select your stop</option>{% for s in route.stops %}<option value="{{ loop.index0 }}">{{ s.name }}</option>{% endfor %}
+</select></label><span id="info">Waiting for bus location…</span></div>
+<div id="map"></div>
+<script>
+const DB = "{{ db_url }}", BUS = "{{ bus_id }}", STOPS = {{ route.stops|tojson }};
+const ALERT_METERS = 500;
+let map, busMarker, alerted = false;
+
+function haversine(a, b) {
+  const R = 6371000, r = x => x * Math.PI / 180;
+  const dLat = r(b.lat - a.lat), dLng = r(b.lng - a.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+window.initMap = function () {
+  map = new google.maps.Map(document.getElementById("map"), { center: STOPS[0], zoom: 13 });
+  const path = STOPS.map(s => ({ lat: s.lat, lng: s.lng }));
+  new google.maps.Polyline({ path, map, strokeColor: "#1a73e8", strokeWeight: 4 });
+  STOPS.forEach((s, i) => new google.maps.Marker({ position: s, map, title: s.name, label: String(i + 1) }));
+  busMarker = new google.maps.Marker({ map, title: "Bus", icon: { path: google.maps.SymbolPath.CIRCLE, scale: 9, fillColor: "#e53935", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
+  poll(); setInterval(poll, 3000);
+};
+
+async function poll() {
+  try {
+    const bus = await (await fetch(`${DB}/buses/${BUS}.json`)).json();
+    if (!bus) return;
+    busMarker.setPosition(bus);
+    const idx = document.getElementById("dest").value;
+    if (idx === "") { document.getElementById("info").textContent = "Bus is live"; return; }
+    const stop = STOPS[+idx], d = haversine(bus, stop);
+    document.getElementById("info").textContent = `${stop.name}: ${(d/1000).toFixed(2)} km away`;
+    if (d <= ALERT_METERS && !alerted) { alerted = true; notify(stop.name); }
+    if (d > ALERT_METERS * 2) alerted = false;
+  } catch (e) { document.getElementById("info").textContent = "Connection issue…"; }
+}
+
+function notify(name) {
+  const msg = `Your stop ${name} is coming up. Get ready!`;
+  if (navigator.vibrate) navigator.vibrate([400, 200, 400]);
+  speechSynthesis.speak(new SpeechSynthesisUtterance(msg));
+  if ("Notification" in window && Notification.permission === "granted") new Notification("Stop alert", { body: msg });
+  else alert(msg);
+}
+document.getElementById("dest").addEventListener("change", () => { alerted = false; if ("Notification" in window) Notification.requestPermission(); });
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key={{ maps_key }}&callback=initMap"></script>
+</body></html>

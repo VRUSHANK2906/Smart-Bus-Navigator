@@ -1,0 +1,6 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Ticket back - {{ route.name }}</title>
+<link rel="stylesheet" href="/static/style.css"></head><body class="ticket">
+<h2>{{ route.name }}</h2>
+<div class="roadmap">{% for s in route.stops %}<div class="stop"><span class="dot"></span>{{ s.name }}</div>{% endfor %}</div>
+<img src="/qr/{{ bus_id }}.png" width="140" alt="QR"><p>Scan to track this bus live &amp; get stop alerts</p>
+<button class="btn no-print" onclick="window.print()">Print</button></body></html>

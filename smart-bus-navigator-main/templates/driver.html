@@ -1,0 +1,18 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Driver - {{ bus_id }}</title><link rel="stylesheet" href="/static/style.css"></head><body>
+<header><h1>Driver: {{ route.name }}</h1></header>
+<main><button id="go" class="btn">Start sharing location</button><p id="status">Idle</p></main>
+<script>
+const DB = "{{ db_url }}", BUS = "{{ bus_id }}";
+let watchId = null;
+function status(t) { document.getElementById("status").textContent = t; }
+document.getElementById("go").onclick = () => {
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; status("Stopped"); return; }
+  watchId = navigator.geolocation.watchPosition(async p => {
+    const body = { lat: p.coords.latitude, lng: p.coords.longitude, speed: p.coords.speed || 0, ts: Date.now() };
+    try { await fetch(`${DB}/buses/${BUS}.json`, { method: "PUT", body: JSON.stringify(body) }); status("Sharing: " + body.lat.toFixed(5) + ", " + body.lng.toFixed(5)); }
+    catch (e) { status("Upload failed: " + e); }
+  }, e => status("GPS error: " + e.message), { enableHighAccuracy: true, maximumAge: 2000 });
+  status("Starting...");
+};
+</script></body></html>

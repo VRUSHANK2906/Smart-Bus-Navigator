@@ -1,0 +1,13 @@
+{
+  "bus101": {
+    "name": "Route 101 - Kukatpally to Secunderabad",
+    "stops": [
+      {"name": "Kukatpally", "lat": 17.4849, "lng": 78.4138},
+      {"name": "Moosapet", "lat": 17.4584, "lng": 78.4271},
+      {"name": "Erragadda", "lat": 17.4515, "lng": 78.4380},
+      {"name": "Ameerpet", "lat": 17.4375, "lng": 78.4482},
+      {"name": "Begumpet", "lat": 17.4432, "lng": 78.4676},
+      {"name": "Secunderabad", "lat": 17.4399, "lng": 78.4983}
+    ]
+  }
+}
